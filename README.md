@@ -1,18 +1,18 @@
 # Backend I - Sistema de Turnos y Reservas
 
-Proyecto desarrollado para Backend I.
+API REST desarrollada con Node.js y Express para gestionar servicios y reservas de un sistema de turnos.
 
-Esta aplicación implementa una API REST para gestionar servicios y reservas de un sistema de turnos utilizando Node.js, Express y persistencia mediante FileSystem en archivos JSON.
+En esta versión, la aplicación utiliza FileSystem para la persistencia de datos en archivos JSON y una arquitectura organizada en rutas, controllers y managers.
 
 ## Tecnologías utilizadas
 
 - Node.js
-- JavaScript
 - Express
+- JavaScript
 - ECMAScript Modules (ESM)
-- dotenv
-- FileSystem (`fs`)
+- FileSystem
 - JSON
+- dotenv
 
 ## Instalación
 
@@ -23,8 +23,6 @@ npm install
 ```
 
 ## Variables de entorno
-
-El proyecto utiliza `dotenv` para manejar las variables de entorno.
 
 Crear un archivo `.env` en la raíz del proyecto tomando como referencia `.env.example`.
 
@@ -45,9 +43,9 @@ Para iniciar el servidor:
 npm start
 ```
 
-El servidor utiliza el puerto definido en `.env`.
+El servidor utiliza el puerto configurado en `.env`.
 
-Por ejemplo:
+Ejemplo:
 
 ```text
 http://localhost:8080
@@ -57,19 +55,22 @@ http://localhost:8080
 
 ```text
 src/
-├── app.js
-├── server.js
-├── routes/
-│   ├── services.router.js
-│   └── bookings.router.js
+├── config/
+│   └── env.config.js
+├── controllers/
+│   ├── services.controller.js
+│   └── bookings.controller.js
 ├── managers/
 │   ├── ServiceManager.js
 │   └── BookingManager.js
+├── routes/
+│   ├── services.router.js
+│   └── bookings.router.js
 ├── data/
 │   ├── services.json
 │   └── bookings.json
-└── config/
-    └── env.config.js
+├── app.js
+└── server.js
 
 package.json
 .env.example
@@ -77,7 +78,58 @@ package.json
 README.md
 ```
 
-# Servicios
+## Arquitectura
+
+La API está organizada separando responsabilidades en tres capas principales:
+
+```text
+Router → Controller → Manager → JSON
+```
+
+### Routers
+
+Los routers se encargan únicamente de definir los endpoints y conectarlos con las funciones correspondientes de los controllers.
+
+No contienen lógica de negocio ni acceso directo a los archivos JSON.
+
+Ubicación:
+
+```text
+src/routes/
+```
+
+### Controllers
+
+Los controllers reciben las requests y generan las responses.
+
+Se encargan de utilizar:
+
+- `req.params`
+- `req.query`
+- `req.body`
+- `res.status().json()`
+
+También llaman a los managers para realizar las operaciones necesarias.
+
+Ubicación:
+
+```text
+src/controllers/
+```
+
+### Managers
+
+Los managers contienen la lógica relacionada con los datos y la persistencia mediante FileSystem.
+
+No utilizan `req` ni `res`.
+
+Ubicación:
+
+```text
+src/managers/
+```
+
+## Servicios
 
 El recurso `services` representa los servicios disponibles para reservar.
 
@@ -97,23 +149,15 @@ Cada servicio tiene la siguiente estructura:
 
 El `id` es generado automáticamente.
 
-## Endpoints de servicios
+### Endpoints de servicios
 
-### Obtener todos los servicios
+#### Obtener todos los servicios
 
 ```http
 GET /api/services
 ```
 
-Respuesta exitosa:
-
-```text
-200 OK
-```
-
-También permite filtrar mediante query parameters.
-
-Ejemplos:
+También permite filtros mediante query parameters:
 
 ```http
 GET /api/services?category=Peluquería
@@ -123,20 +167,13 @@ GET /api/services?category=Peluquería
 GET /api/services?available=true
 ```
 
-### Obtener un servicio por ID
+#### Obtener un servicio por ID
 
 ```http
 GET /api/services/:sid
 ```
 
-Respuestas posibles:
-
-```text
-200 OK
-404 Not Found
-```
-
-### Crear un servicio
+#### Crear un servicio
 
 ```http
 POST /api/services
@@ -155,56 +192,41 @@ Ejemplo de body:
 }
 ```
 
-El `id` no se envía en el body porque se genera automáticamente.
+El `id` es generado automáticamente y no debe enviarse en el body.
 
-Todos los campos son requeridos.
-
-Respuestas posibles:
-
-```text
-201 Created
-400 Bad Request
-```
-
-### Actualizar un servicio
+#### Actualizar un servicio
 
 ```http
 PUT /api/services/:sid
 ```
 
-Ejemplo:
+El `id` original no puede ser modificado.
 
-```json
-{
-  "duration": 90,
-  "price": 2200,
-  "available": false
-}
-```
-
-El `id` original del servicio no puede modificarse.
-
-Respuestas posibles:
-
-```text
-200 OK
-404 Not Found
-```
-
-### Eliminar un servicio
+#### Eliminar un servicio
 
 ```http
 DELETE /api/services/:sid
 ```
 
-Respuestas posibles:
+## Controller de servicios
+
+El archivo:
 
 ```text
-200 OK
-404 Not Found
+src/controllers/services.controller.js
 ```
 
-# Reservas
+implementa las siguientes funciones:
+
+- `getServices`
+- `getServiceById`
+- `createService`
+- `updateService`
+- `deleteService`
+
+Estas funciones interactúan con `ServiceManager`.
+
+## Reservas
 
 El recurso `bookings` representa las reservas realizadas por los clientes.
 
@@ -224,11 +246,11 @@ Cada reserva tiene la siguiente estructura:
 
 El `id` es generado automáticamente.
 
-Una reserva puede crearse inicialmente con el array `services` vacío.
+Una reserva puede iniciarse con el array `services` vacío.
 
-## Servicios dentro de una reserva
+### Servicios dentro de una reserva
 
-Cuando se agrega un servicio a una reserva se almacena de esta forma:
+Los servicios asociados a una reserva se almacenan de la siguiente forma:
 
 ```json
 {
@@ -237,7 +259,9 @@ Cuando se agrega un servicio a una reserva se almacena de esta forma:
 }
 ```
 
-Si el mismo servicio se agrega nuevamente, no se crea otro elemento. En cambio, se incrementa `quantity`:
+Si se agrega nuevamente el mismo servicio, se incrementa `quantity` en lugar de crear un elemento duplicado.
+
+Ejemplo:
 
 ```json
 {
@@ -246,9 +270,9 @@ Si el mismo servicio se agrega nuevamente, no se crea otro elemento. En cambio, 
 }
 ```
 
-## Endpoints de reservas
+### Endpoints de reservas
 
-### Crear una reserva
+#### Crear una reserva
 
 ```http
 POST /api/bookings
@@ -266,68 +290,46 @@ Ejemplo de body:
 }
 ```
 
-El `id` es generado automáticamente y la reserva puede comenzar con:
-
-```json
-"services": []
-```
-
-Respuesta exitosa:
-
-```text
-201 Created
-```
-
-Si faltan campos requeridos:
-
-```text
-400 Bad Request
-```
-
-### Obtener una reserva por ID
+#### Obtener una reserva por ID
 
 ```http
 GET /api/bookings/:bid
 ```
 
-Respuestas posibles:
-
-```text
-200 OK
-404 Not Found
-```
-
-### Agregar un servicio a una reserva
+#### Agregar un servicio a una reserva
 
 ```http
 POST /api/bookings/:bid/services/:sid
 ```
 
-Ejemplo:
+Antes de agregar el servicio se valida:
 
-```http
-POST /api/bookings/1/services/1
-```
+- que la reserva exista;
+- que el servicio exista.
 
-Antes de agregar el servicio se valida que:
+La existencia del servicio es validada desde el controller mediante `ServiceManager`.
 
-- exista la reserva;
-- exista el servicio.
+## Controller de reservas
 
-Si ambos existen, el servicio se agrega con `quantity: 1`.
-
-Si ya se encuentra en la reserva, se incrementa su `quantity`.
-
-Respuestas posibles:
+El archivo:
 
 ```text
-200 OK
-404 Not Found
+src/controllers/bookings.controller.js
 ```
 
-# Managers
+implementa:
 
-## ServiceManager
+- `createBooking`
+- `getBookingById`
+- `addServiceToBooking`
+
+Estas funciones interactúan con `BookingManager`.
+
+Para agregar un servicio a una reserva también se utiliza `ServiceManager` para validar que el servicio exista.
+
+## Managers
+
+### ServiceManager
 
 Ubicación:
 
@@ -335,7 +337,7 @@ Ubicación:
 src/managers/ServiceManager.js
 ```
 
-Métodos implementados:
+Métodos:
 
 - `getServices`
 - `getServiceById`
@@ -343,13 +345,13 @@ Métodos implementados:
 - `updateService`
 - `deleteService`
 
-El manager se encarga de leer y modificar:
+Administra la persistencia de:
 
 ```text
 src/data/services.json
 ```
 
-## BookingManager
+### BookingManager
 
 Ubicación:
 
@@ -357,51 +359,49 @@ Ubicación:
 src/managers/BookingManager.js
 ```
 
-Métodos implementados:
+Métodos:
 
 - `createBooking`
 - `getBookingById`
 - `addServiceToBooking`
 
-El manager se encarga de leer y modificar:
+Administra la persistencia de:
 
 ```text
 src/data/bookings.json
 ```
 
-# Resumen de endpoints
+## Resumen de endpoints
 
 | Método | Ruta | Descripción |
 | --- | --- | --- |
 | GET | `/api/services` | Obtener todos los servicios |
-| GET | `/api/services/:sid` | Obtener servicio por ID |
-| POST | `/api/services` | Crear servicio |
-| PUT | `/api/services/:sid` | Actualizar servicio |
-| DELETE | `/api/services/:sid` | Eliminar servicio |
-| POST | `/api/bookings` | Crear reserva |
-| GET | `/api/bookings/:bid` | Obtener reserva por ID |
-| POST | `/api/bookings/:bid/services/:sid` | Agregar servicio a reserva |
+| GET | `/api/services/:sid` | Obtener un servicio por ID |
+| POST | `/api/services` | Crear un servicio |
+| PUT | `/api/services/:sid` | Actualizar un servicio |
+| DELETE | `/api/services/:sid` | Eliminar un servicio |
+| POST | `/api/bookings` | Crear una reserva |
+| GET | `/api/bookings/:bid` | Obtener una reserva por ID |
+| POST | `/api/bookings/:bid/services/:sid` | Agregar un servicio a una reserva |
 
-# Persistencia con FileSystem
+## Persistencia
 
-Los datos se almacenan en archivos JSON:
+Los datos se almacenan utilizando FileSystem en:
 
 ```text
 src/data/services.json
 src/data/bookings.json
 ```
 
-Los managers utilizan FileSystem para leer y escribir estos archivos.
+Los datos permanecen almacenados aunque el servidor sea reiniciado.
 
-Por lo tanto, los datos persisten aunque el servidor sea reiniciado.
+## Archivos ignorados
 
-# Archivos ignorados
-
-El proyecto utiliza `.gitignore` para evitar subir archivos que no deben formar parte del repositorio.
+El archivo `.gitignore` evita subir al repositorio:
 
 ```text
 node_modules/
 .env
 ```
 
-El archivo `.env.example` se incluye como referencia para configurar las variables de entorno necesarias.
+`.env.example` se incluye como referencia para configurar las variables de entorno necesarias.
