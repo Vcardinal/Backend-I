@@ -1,11 +1,10 @@
-import { env } from "./config/env.config.js";
-import ServiceManager from "./managers/ServiceManager.js";
+import express from "express";
+import servicesRouter from "./routes/services.router.js";
 
-const serviceManager = new ServiceManager();
+const app = express();
 
-console.log("Aplicación iniciada correctamente");
-console.log(`PORT: ${env.port}`);
-console.log(`NODE_ENV: ${env.nodeEnv}`);
+app.use(express.json());
 
-console.log("Servicios disponibles:");
-console.log(serviceManager.getServices());
+app.use("/api/services", servicesRouter);
+
+export default app;
