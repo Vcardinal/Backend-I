@@ -9,11 +9,11 @@ import {
 // GET - Vista de servicios
 export const renderServices = async (req, res) => {
   try {
-    const services = await getServicesService();
+    const result = await getServicesService();
 
     res.render("services", {
       title: "Servicios",
-      services,
+      services: result.services,
     });
   } catch (error) {
     res.status(500).send(

@@ -11,6 +11,16 @@ export default class BookingsDAO {
       return null;
     }
 
+    return BookingModel.findById(id)
+      .populate("services.service")
+      .lean();
+  }
+
+  async getByIdRaw(id) {
+    if (!mongoose.isValidObjectId(id)) {
+      return null;
+    }
+
     return BookingModel.findById(id).lean();
   }
 

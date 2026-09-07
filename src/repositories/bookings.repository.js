@@ -15,6 +15,10 @@ export default class BookingsRepository {
     return bookingsDAO.getById(id);
   }
 
+  async getByIdRaw(id) {
+    return bookingsDAO.getByIdRaw(id);
+  }
+
   async update(id, updatedData) {
     return bookingsDAO.update(id, updatedData);
   }

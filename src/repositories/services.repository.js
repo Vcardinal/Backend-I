@@ -3,8 +3,8 @@ import ServicesDAO from "../dao/services.dao.js";
 const servicesDAO = new ServicesDAO();
 
 export default class ServicesRepository {
-  async getAll() {
-    return servicesDAO.getAll();
+  async getAll(options = {}) {
+    return servicesDAO.getAll(options);
   }
 
   async getById(id) {

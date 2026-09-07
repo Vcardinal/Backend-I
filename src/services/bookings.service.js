@@ -9,22 +9,6 @@ export const getBookings = async () => {
 };
 
 export const createBooking = async (bookingData) => {
-  const requiredFields = [
-    "clientName",
-    "clientEmail",
-    "date",
-    "time",
-    "status",
-  ];
-
-  for (const field of requiredFields) {
-    if (!(field in bookingData)) {
-      throw new Error(
-        `Falta el campo requerido: ${field}`
-      );
-    }
-  }
-
   const newBooking = {
     clientName: bookingData.clientName,
     clientEmail: bookingData.clientEmail,
@@ -46,7 +30,7 @@ export const addServiceToBooking = async (
   serviceId
 ) => {
   const booking =
-    await bookingsRepository.getById(bookingId);
+    await bookingsRepository.getByIdRaw(bookingId);
 
   if (!booking) {
     return {
