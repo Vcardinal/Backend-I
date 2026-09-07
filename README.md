@@ -2,7 +2,7 @@
 
 API REST desarrollada con Node.js y Express para gestionar servicios y reservas de un sistema de turnos.
 
-En esta versión, la aplicación utiliza FileSystem para la persistencia de datos en archivos JSON y una arquitectura organizada en rutas, controllers y managers.
+La aplicación utiliza FileSystem para la persistencia de datos en archivos JSON y una arquitectura en capas basada en Routers, Controllers, Services, Repositories y DAO.
 
 ## Tecnologías utilizadas
 
@@ -60,9 +60,15 @@ src/
 ├── controllers/
 │   ├── services.controller.js
 │   └── bookings.controller.js
-├── managers/
-│   ├── ServiceManager.js
-│   └── BookingManager.js
+├── services/
+│   ├── services.service.js
+│   └── bookings.service.js
+├── repositories/
+│   ├── services.repository.js
+│   └── bookings.repository.js
+├── dao/
+│   ├── services.dao.js
+│   └── bookings.dao.js
 ├── routes/
 │   ├── services.router.js
 │   └── bookings.router.js
@@ -80,17 +86,31 @@ README.md
 
 ## Arquitectura
 
-La API está organizada separando responsabilidades en tres capas principales:
+La API está organizada utilizando una arquitectura en capas.
+
+El flujo de una solicitud es:
 
 ```text
-Router → Controller → Manager → JSON
+Router
+  ↓
+Controller
+  ↓
+Service
+  ↓
+Repository
+  ↓
+DAO
+  ↓
+Archivo JSON
 ```
+
+Cada capa tiene una responsabilidad específica.
 
 ### Routers
 
-Los routers se encargan únicamente de definir los endpoints y conectarlos con las funciones correspondientes de los controllers.
+Los routers definen los endpoints de la API y conectan cada ruta con la función correspondiente del controller.
 
-No contienen lógica de negocio ni acceso directo a los archivos JSON.
+No contienen lógica de negocio ni acceden directamente a los archivos JSON.
 
 Ubicación:
 
@@ -100,16 +120,17 @@ src/routes/
 
 ### Controllers
 
-Los controllers reciben las requests y generan las responses.
+Los controllers reciben las requests y generan las responses HTTP.
 
-Se encargan de utilizar:
+Son la única capa que utiliza objetos de Express como:
 
 - `req.params`
 - `req.query`
 - `req.body`
-- `res.status().json()`
+- `res.status()`
+- `res.json()`
 
-También llaman a los managers para realizar las operaciones necesarias.
+Los controllers llaman a la capa de services y no acceden directamente a repositories, DAO ni archivos JSON.
 
 Ubicación:
 
@@ -117,16 +138,55 @@ Ubicación:
 src/controllers/
 ```
 
-### Managers
+### Services
 
-Los managers contienen la lógica relacionada con los datos y la persistencia mediante FileSystem.
+Los services contienen las reglas de negocio de la aplicación.
 
-No utilizan `req` ni `res`.
+Entre sus responsabilidades se encuentran:
+
+- validar los campos requeridos;
+- aplicar filtros de servicios;
+- impedir la modificación del ID de un servicio;
+- validar la existencia de reservas y servicios;
+- incrementar `quantity` cuando un servicio ya existe dentro de una reserva.
+
+Los services no utilizan `req` ni `res` y no acceden directamente a los archivos JSON.
 
 Ubicación:
 
 ```text
-src/managers/
+src/services/
+```
+
+### Repositories
+
+Los repositories funcionan como intermediarios entre los services y los DAO.
+
+Exponen métodos de acceso a datos sin contener reglas de negocio ni acceder directamente a FileSystem.
+
+Ubicación:
+
+```text
+src/repositories/
+```
+
+### DAO
+
+Los DAO son responsables del acceso directo a la persistencia.
+
+Realizan las operaciones de lectura y escritura sobre:
+
+```text
+src/data/services.json
+src/data/bookings.json
+```
+
+No contienen lógica de negocio ni utilizan `req` o `res`.
+
+Ubicación:
+
+```text
+src/dao/
 ```
 
 ## Servicios
@@ -147,7 +207,7 @@ Cada servicio tiene la siguiente estructura:
 }
 ```
 
-El `id` es generado automáticamente.
+El `id` se genera automáticamente.
 
 ### Endpoints de servicios
 
@@ -173,6 +233,8 @@ GET /api/services?available=true
 GET /api/services/:sid
 ```
 
+Si el servicio no existe, la API responde con estado `404`.
+
 #### Crear un servicio
 
 ```http
@@ -192,7 +254,16 @@ Ejemplo de body:
 }
 ```
 
-El `id` es generado automáticamente y no debe enviarse en el body.
+Los campos requeridos son:
+
+- `name`
+- `description`
+- `duration`
+- `price`
+- `category`
+- `available`
+
+El `id` se genera automáticamente y no debe enviarse en el body.
 
 #### Actualizar un servicio
 
@@ -200,7 +271,7 @@ El `id` es generado automáticamente y no debe enviarse en el body.
 PUT /api/services/:sid
 ```
 
-El `id` original no puede ser modificado.
+El ID original del servicio no puede ser modificado aunque se envíe un valor diferente en el body.
 
 #### Eliminar un servicio
 
@@ -208,15 +279,15 @@ El `id` original no puede ser modificado.
 DELETE /api/services/:sid
 ```
 
-## Controller de servicios
+## Capa de servicios para services
 
 El archivo:
 
 ```text
-src/controllers/services.controller.js
+src/services/services.service.js
 ```
 
-implementa las siguientes funciones:
+implementa:
 
 - `getServices`
 - `getServiceById`
@@ -224,7 +295,35 @@ implementa las siguientes funciones:
 - `updateService`
 - `deleteService`
 
-Estas funciones interactúan con `ServiceManager`.
+La capa utiliza `ServicesRepository` para acceder a los datos.
+
+## Repository y DAO de services
+
+El repository:
+
+```text
+src/repositories/services.repository.js
+```
+
+expone:
+
+- `getAll`
+- `getById`
+- `create`
+- `update`
+- `delete`
+
+El DAO:
+
+```text
+src/dao/services.dao.js
+```
+
+realiza la persistencia sobre:
+
+```text
+src/data/services.json
+```
 
 ## Reservas
 
@@ -244,9 +343,9 @@ Cada reserva tiene la siguiente estructura:
 }
 ```
 
-El `id` es generado automáticamente.
+El `id` se genera automáticamente.
 
-Una reserva puede iniciarse con el array `services` vacío.
+Una nueva reserva comienza con el array `services` vacío.
 
 ### Servicios dentro de una reserva
 
@@ -259,9 +358,9 @@ Los servicios asociados a una reserva se almacenan de la siguiente forma:
 }
 ```
 
-Si se agrega nuevamente el mismo servicio, se incrementa `quantity` en lugar de crear un elemento duplicado.
+Si se agrega nuevamente el mismo servicio a la misma reserva, no se crea un elemento duplicado.
 
-Ejemplo:
+En su lugar se incrementa `quantity`:
 
 ```json
 {
@@ -269,6 +368,14 @@ Ejemplo:
   "quantity": 2
 }
 ```
+
+Esta regla de negocio se encuentra en:
+
+```text
+src/services/bookings.service.js
+```
+
+y no en el DAO.
 
 ### Endpoints de reservas
 
@@ -296,6 +403,8 @@ Ejemplo de body:
 GET /api/bookings/:bid
 ```
 
+Si la reserva no existe, la API responde con estado `404`.
+
 #### Agregar un servicio a una reserva
 
 ```http
@@ -307,14 +416,14 @@ Antes de agregar el servicio se valida:
 - que la reserva exista;
 - que el servicio exista.
 
-La existencia del servicio es validada desde el controller mediante `ServiceManager`.
+Si el servicio ya se encuentra asociado a la reserva, se incrementa su `quantity`.
 
-## Controller de reservas
+## Capa de servicios para bookings
 
 El archivo:
 
 ```text
-src/controllers/bookings.controller.js
+src/services/bookings.service.js
 ```
 
 implementa:
@@ -323,53 +432,35 @@ implementa:
 - `getBookingById`
 - `addServiceToBooking`
 
-Estas funciones interactúan con `BookingManager`.
+En esta capa se encuentra la regla de negocio que incrementa `quantity` cuando se agrega nuevamente el mismo servicio.
 
-Para agregar un servicio a una reserva también se utiliza `ServiceManager` para validar que el servicio exista.
+## Repository y DAO de bookings
 
-## Managers
-
-### ServiceManager
-
-Ubicación:
+El repository:
 
 ```text
-src/managers/ServiceManager.js
+src/repositories/bookings.repository.js
 ```
 
-Métodos:
+expone:
 
-- `getServices`
-- `getServiceById`
-- `addService`
-- `updateService`
-- `deleteService`
+- `create`
+- `getById`
+- `update`
 
-Administra la persistencia de:
+El DAO:
 
 ```text
-src/data/services.json
+src/dao/bookings.dao.js
 ```
 
-### BookingManager
-
-Ubicación:
-
-```text
-src/managers/BookingManager.js
-```
-
-Métodos:
-
-- `createBooking`
-- `getBookingById`
-- `addServiceToBooking`
-
-Administra la persistencia de:
+realiza la persistencia sobre:
 
 ```text
 src/data/bookings.json
 ```
+
+La lógica para incrementar `quantity` no se encuentra en el DAO.
 
 ## Resumen de endpoints
 
@@ -386,7 +477,7 @@ src/data/bookings.json
 
 ## Persistencia
 
-Los datos se almacenan utilizando FileSystem en:
+Los datos se almacenan mediante FileSystem en:
 
 ```text
 src/data/services.json
@@ -404,4 +495,4 @@ node_modules/
 .env
 ```
 
-`.env.example` se incluye como referencia para configurar las variables de entorno necesarias.
+El archivo `.env.example` se incluye como referencia para configurar las variables de entorno necesarias.

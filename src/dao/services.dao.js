@@ -5,14 +5,17 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const servicesPath = path.join(__dirname, "../data/services.json");
+const servicesPath = path.join(
+  __dirname,
+  "../data/services.json"
+);
 
-export default class ServiceManager {
+export default class ServicesDAO {
   constructor() {
     this.path = servicesPath;
   }
 
-  getServices() {
+  getAll() {
     if (!fs.existsSync(this.path)) {
       return [];
     }
@@ -26,8 +29,8 @@ export default class ServiceManager {
     return JSON.parse(data);
   }
 
-  getServiceById(id) {
-    const services = this.getServices();
+  getById(id) {
+    const services = this.getAll();
 
     const service = services.find(
       (service) => service.id === Number(id)
@@ -36,23 +39,8 @@ export default class ServiceManager {
     return service || null;
   }
 
-  addService(serviceData) {
-    const requiredFields = [
-      "name",
-      "description",
-      "duration",
-      "price",
-      "category",
-      "available",
-    ];
-
-    for (const field of requiredFields) {
-      if (!(field in serviceData)) {
-        throw new Error(`Falta el campo requerido: ${field}`);
-      }
-    }
-
-    const services = this.getServices();
+  create(serviceData) {
+    const services = this.getAll();
 
     const newId =
       services.length > 0
@@ -61,12 +49,7 @@ export default class ServiceManager {
 
     const newService = {
       id: newId,
-      name: serviceData.name,
-      description: serviceData.description,
-      duration: serviceData.duration,
-      price: serviceData.price,
-      category: serviceData.category,
-      available: serviceData.available,
+      ...serviceData,
     };
 
     services.push(newService);
@@ -79,8 +62,8 @@ export default class ServiceManager {
     return newService;
   }
 
-  updateService(id, updatedData) {
-    const services = this.getServices();
+  update(id, updatedData) {
+    const services = this.getAll();
 
     const serviceIndex = services.findIndex(
       (service) => service.id === Number(id)
@@ -90,11 +73,9 @@ export default class ServiceManager {
       return null;
     }
 
-    const { id: ignoredId, ...dataToUpdate } = updatedData;
-
     services[serviceIndex] = {
       ...services[serviceIndex],
-      ...dataToUpdate,
+      ...updatedData,
       id: services[serviceIndex].id,
     };
 
@@ -106,8 +87,8 @@ export default class ServiceManager {
     return services[serviceIndex];
   }
 
-  deleteService(id) {
-    const services = this.getServices();
+  delete(id) {
+    const services = this.getAll();
 
     const serviceIndex = services.findIndex(
       (service) => service.id === Number(id)
