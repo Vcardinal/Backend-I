@@ -2,15 +2,16 @@ import ServicesRepository from "../repositories/services.repository.js";
 
 const servicesRepository = new ServicesRepository();
 
-export const getServices = (filters = {}) => {
-  let services = servicesRepository.getAll();
+export const getServices = async (filters = {}) => {
+  let services = await servicesRepository.getAll();
 
   const { category, available } = filters;
 
   if (category) {
     services = services.filter(
       (service) =>
-        service.category.toLowerCase() === category.toLowerCase()
+        service.category.toLowerCase() ===
+        category.toLowerCase()
     );
   }
 
@@ -28,11 +29,11 @@ export const getServices = (filters = {}) => {
   return services;
 };
 
-export const getServiceById = (id) => {
+export const getServiceById = async (id) => {
   return servicesRepository.getById(id);
 };
 
-export const createService = (serviceData) => {
+export const createService = async (serviceData) => {
   const requiredFields = [
     "name",
     "description",
@@ -44,7 +45,9 @@ export const createService = (serviceData) => {
 
   for (const field of requiredFields) {
     if (!(field in serviceData)) {
-      throw new Error(`Falta el campo requerido: ${field}`);
+      throw new Error(
+        `Falta el campo requerido: ${field}`
+      );
     }
   }
 
@@ -60,12 +63,22 @@ export const createService = (serviceData) => {
   return servicesRepository.create(newService);
 };
 
-export const updateService = (id, updatedData) => {
-  const { id: ignoredId, ...dataToUpdate } = updatedData;
+export const updateService = async (
+  id,
+  updatedData
+) => {
+  const {
+    id: ignoredId,
+    _id: ignoredMongoId,
+    ...dataToUpdate
+  } = updatedData;
 
-  return servicesRepository.update(id, dataToUpdate);
+  return servicesRepository.update(
+    id,
+    dataToUpdate
+  );
 };
 
-export const deleteService = (id) => {
+export const deleteService = async (id) => {
   return servicesRepository.delete(id);
 };

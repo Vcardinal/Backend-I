@@ -1,94 +1,21 @@
 # Backend I - Sistema de Turnos y Reservas
 
-API REST desarrollada con Node.js y Express para gestionar servicios y reservas de un sistema de turnos.
+Proyecto backend desarrollado con Node.js y Express para la gestión de servicios y reservas.
 
-La aplicación utiliza FileSystem para la persistencia de datos en archivos JSON y una arquitectura en capas basada en Routers, Controllers, Services, Repositories y DAO.
+En esta entrega se migró la persistencia de datos desde FileSystem a MongoDB Atlas utilizando Mongoose, manteniendo la arquitectura en capas y los endpoints existentes.
 
 ## Tecnologías utilizadas
 
 - Node.js
 - Express
-- JavaScript
-- ECMAScript Modules (ESM)
-- FileSystem
-- JSON
+- MongoDB Atlas
+- Mongoose
 - dotenv
-
-## Instalación
-
-Clonar el repositorio e instalar las dependencias:
-
-```bash
-npm install
-```
-
-## Variables de entorno
-
-Crear un archivo `.env` en la raíz del proyecto tomando como referencia `.env.example`.
-
-Ejemplo:
-
-```env
-PORT=8080
-NODE_ENV=development
-```
-
-El archivo `.env` no se incluye en el repositorio.
-
-## Ejecución
-
-Para iniciar el servidor:
-
-```bash
-npm start
-```
-
-El servidor utiliza el puerto configurado en `.env`.
-
-Ejemplo:
-
-```text
-http://localhost:8080
-```
-
-## Estructura del proyecto
-
-```text
-src/
-├── config/
-│   └── env.config.js
-├── controllers/
-│   ├── services.controller.js
-│   └── bookings.controller.js
-├── services/
-│   ├── services.service.js
-│   └── bookings.service.js
-├── repositories/
-│   ├── services.repository.js
-│   └── bookings.repository.js
-├── dao/
-│   ├── services.dao.js
-│   └── bookings.dao.js
-├── routes/
-│   ├── services.router.js
-│   └── bookings.router.js
-├── data/
-│   ├── services.json
-│   └── bookings.json
-├── app.js
-└── server.js
-
-package.json
-.env.example
-.gitignore
-README.md
-```
+- JavaScript ES Modules
 
 ## Arquitectura
 
-La API está organizada utilizando una arquitectura en capas.
-
-El flujo de una solicitud es:
+El proyecto utiliza una arquitectura en capas:
 
 ```text
 Router
@@ -101,160 +28,66 @@ Repository
   ↓
 DAO
   ↓
-Archivo JSON
+Mongoose
+  ↓
+MongoDB Atlas
 ```
 
-Cada capa tiene una responsabilidad específica.
+### Router
 
-### Routers
+Define los endpoints de la API y deriva las solicitudes hacia los controllers.
 
-Los routers definen los endpoints de la API y conectan cada ruta con la función correspondiente del controller.
+### Controller
 
-No contienen lógica de negocio ni acceden directamente a los archivos JSON.
+Recibe las solicitudes HTTP, ejecuta la lógica correspondiente mediante la capa Service y devuelve las respuestas HTTP.
 
-Ubicación:
+### Service
 
-```text
-src/routes/
-```
+Contiene las validaciones y la lógica de negocio de la aplicación.
 
-### Controllers
+### Repository
 
-Los controllers reciben las requests y generan las responses HTTP.
-
-Son la única capa que utiliza objetos de Express como:
-
-- `req.params`
-- `req.query`
-- `req.body`
-- `res.status()`
-- `res.json()`
-
-Los controllers llaman a la capa de services y no acceden directamente a repositories, DAO ni archivos JSON.
-
-Ubicación:
-
-```text
-src/controllers/
-```
-
-### Services
-
-Los services contienen las reglas de negocio de la aplicación.
-
-Entre sus responsabilidades se encuentran:
-
-- validar los campos requeridos;
-- aplicar filtros de servicios;
-- impedir la modificación del ID de un servicio;
-- validar la existencia de reservas y servicios;
-- incrementar `quantity` cuando un servicio ya existe dentro de una reserva.
-
-Los services no utilizan `req` ni `res` y no acceden directamente a los archivos JSON.
-
-Ubicación:
-
-```text
-src/services/
-```
-
-### Repositories
-
-Los repositories funcionan como intermediarios entre los services y los DAO.
-
-Exponen métodos de acceso a datos sin contener reglas de negocio ni acceder directamente a FileSystem.
-
-Ubicación:
-
-```text
-src/repositories/
-```
+Actúa como intermediario entre la lógica de negocio y la capa de acceso a datos.
 
 ### DAO
 
-Los DAO son responsables del acceso directo a la persistencia.
+Gestiona el acceso a MongoDB utilizando los modelos de Mongoose.
 
-Realizan las operaciones de lectura y escritura sobre:
-
-```text
-src/data/services.json
-src/data/bookings.json
-```
-
-No contienen lógica de negocio ni utilizan `req` o `res`.
-
-Ubicación:
+## Estructura del proyecto
 
 ```text
-src/dao/
+src/
+├── config/
+│   ├── database.js
+│   └── env.config.js
+├── controllers/
+│   ├── bookings.controller.js
+│   └── services.controller.js
+├── dao/
+│   ├── bookings.dao.js
+│   └── services.dao.js
+├── models/
+│   ├── booking.model.js
+│   ├── message.model.js
+│   └── service.model.js
+├── repositories/
+│   ├── bookings.repository.js
+│   └── services.repository.js
+├── routes/
+│   ├── bookings.router.js
+│   └── services.router.js
+├── services/
+│   ├── bookings.service.js
+│   └── services.service.js
+├── app.js
+└── server.js
 ```
 
-## Servicios
+## Modelos de Mongoose
 
-El recurso `services` representa los servicios disponibles para reservar.
+### Service
 
-Cada servicio tiene la siguiente estructura:
-
-```json
-{
-  "id": 1,
-  "name": "Corte de cabello",
-  "description": "Corte de cabello personalizado",
-  "duration": 60,
-  "price": 1500,
-  "category": "Peluquería",
-  "available": true
-}
-```
-
-El `id` se genera automáticamente.
-
-### Endpoints de servicios
-
-#### Obtener todos los servicios
-
-```http
-GET /api/services
-```
-
-También permite filtros mediante query parameters:
-
-```http
-GET /api/services?category=Peluquería
-```
-
-```http
-GET /api/services?available=true
-```
-
-#### Obtener un servicio por ID
-
-```http
-GET /api/services/:sid
-```
-
-Si el servicio no existe, la API responde con estado `404`.
-
-#### Crear un servicio
-
-```http
-POST /api/services
-```
-
-Ejemplo de body:
-
-```json
-{
-  "name": "Masaje relajante",
-  "description": "Sesión de masaje relajante",
-  "duration": 60,
-  "price": 1800,
-  "category": "Bienestar",
-  "available": true
-}
-```
-
-Los campos requeridos son:
+Los servicios contienen:
 
 - `name`
 - `description`
@@ -263,7 +96,59 @@ Los campos requeridos son:
 - `category`
 - `available`
 
-El `id` se genera automáticamente y no debe enviarse en el body.
+### Booking
+
+Las reservas contienen:
+
+- `clientName`
+- `clientEmail`
+- `date`
+- `time`
+- `status`
+- `services`
+
+Los servicios asociados a una reserva se almacenan mediante referencias `ObjectId`:
+
+```js
+services: [
+  {
+    service: ObjectId,
+    quantity: Number
+  }
+]
+```
+
+El campo `service` referencia al modelo `Service`.
+
+### Message
+
+Se incluye el modelo `Message` solicitado para la persistencia de mensajes en MongoDB.
+
+No se agregaron endpoints de mensajes porque no forman parte de los endpoints requeridos en esta entrega.
+
+## Endpoints
+
+### Services
+
+#### Obtener todos los servicios
+
+```http
+GET /api/services
+```
+
+Permite filtros opcionales por `category` y `available`.
+
+#### Obtener un servicio por ID
+
+```http
+GET /api/services/:sid
+```
+
+#### Crear un servicio
+
+```http
+POST /api/services
+```
 
 #### Actualizar un servicio
 
@@ -271,130 +156,18 @@ El `id` se genera automáticamente y no debe enviarse en el body.
 PUT /api/services/:sid
 ```
 
-El ID original del servicio no puede ser modificado aunque se envíe un valor diferente en el body.
-
 #### Eliminar un servicio
 
 ```http
 DELETE /api/services/:sid
 ```
 
-## Capa de servicios para services
-
-El archivo:
-
-```text
-src/services/services.service.js
-```
-
-implementa:
-
-- `getServices`
-- `getServiceById`
-- `createService`
-- `updateService`
-- `deleteService`
-
-La capa utiliza `ServicesRepository` para acceder a los datos.
-
-## Repository y DAO de services
-
-El repository:
-
-```text
-src/repositories/services.repository.js
-```
-
-expone:
-
-- `getAll`
-- `getById`
-- `create`
-- `update`
-- `delete`
-
-El DAO:
-
-```text
-src/dao/services.dao.js
-```
-
-realiza la persistencia sobre:
-
-```text
-src/data/services.json
-```
-
-## Reservas
-
-El recurso `bookings` representa las reservas realizadas por los clientes.
-
-Cada reserva tiene la siguiente estructura:
-
-```json
-{
-  "id": 1,
-  "clientName": "Ana Pérez",
-  "clientEmail": "ana@email.com",
-  "date": "2026-09-10",
-  "time": "15:00",
-  "status": "pending",
-  "services": []
-}
-```
-
-El `id` se genera automáticamente.
-
-Una nueva reserva comienza con el array `services` vacío.
-
-### Servicios dentro de una reserva
-
-Los servicios asociados a una reserva se almacenan de la siguiente forma:
-
-```json
-{
-  "service": 1,
-  "quantity": 1
-}
-```
-
-Si se agrega nuevamente el mismo servicio a la misma reserva, no se crea un elemento duplicado.
-
-En su lugar se incrementa `quantity`:
-
-```json
-{
-  "service": 1,
-  "quantity": 2
-}
-```
-
-Esta regla de negocio se encuentra en:
-
-```text
-src/services/bookings.service.js
-```
-
-y no en el DAO.
-
-### Endpoints de reservas
+### Bookings
 
 #### Crear una reserva
 
 ```http
 POST /api/bookings
-```
-
-Ejemplo de body:
-
-```json
-{
-  "clientName": "Ana Pérez",
-  "clientEmail": "ana@email.com",
-  "date": "2026-09-10",
-  "time": "15:00",
-  "status": "pending"
-}
 ```
 
 #### Obtener una reserva por ID
@@ -403,96 +176,63 @@ Ejemplo de body:
 GET /api/bookings/:bid
 ```
 
-Si la reserva no existe, la API responde con estado `404`.
-
 #### Agregar un servicio a una reserva
 
 ```http
 POST /api/bookings/:bid/services/:sid
 ```
 
-Antes de agregar el servicio se valida:
-
-- que la reserva exista;
-- que el servicio exista.
-
 Si el servicio ya se encuentra asociado a la reserva, se incrementa su `quantity`.
 
-## Capa de servicios para bookings
+## Variables de entorno
 
-El archivo:
+Crear un archivo `.env` tomando como referencia `.env.example`:
 
-```text
-src/services/bookings.service.js
+```env
+PORT=8080
+NODE_ENV=development
+MONGO_URI=URI_DE_CONEXION_A_MONGODB_ATLAS
 ```
 
-implementa:
+La variable `MONGO_URI` contiene la cadena de conexión a MongoDB Atlas.
 
-- `createBooking`
-- `getBookingById`
-- `addServiceToBooking`
+El archivo `.env` no se incluye en el repositorio para proteger las credenciales.
 
-En esta capa se encuentra la regla de negocio que incrementa `quantity` cuando se agrega nuevamente el mismo servicio.
+## Instalación
 
-## Repository y DAO de bookings
+Instalar las dependencias:
 
-El repository:
-
-```text
-src/repositories/bookings.repository.js
+```bash
+npm install
 ```
 
-expone:
+Iniciar el servidor:
 
-- `create`
-- `getById`
-- `update`
-
-El DAO:
-
-```text
-src/dao/bookings.dao.js
+```bash
+npm start
 ```
 
-realiza la persistencia sobre:
+Con la configuración por defecto, la API estará disponible en:
 
 ```text
-src/data/bookings.json
+http://localhost:8080
 ```
-
-La lógica para incrementar `quantity` no se encuentra en el DAO.
-
-## Resumen de endpoints
-
-| Método | Ruta | Descripción |
-| --- | --- | --- |
-| GET | `/api/services` | Obtener todos los servicios |
-| GET | `/api/services/:sid` | Obtener un servicio por ID |
-| POST | `/api/services` | Crear un servicio |
-| PUT | `/api/services/:sid` | Actualizar un servicio |
-| DELETE | `/api/services/:sid` | Eliminar un servicio |
-| POST | `/api/bookings` | Crear una reserva |
-| GET | `/api/bookings/:bid` | Obtener una reserva por ID |
-| POST | `/api/bookings/:bid/services/:sid` | Agregar un servicio a una reserva |
 
 ## Persistencia
 
-Los datos se almacenan mediante FileSystem en:
+La aplicación utiliza MongoDB Atlas como base de datos.
+
+Mongoose se utiliza para definir los modelos y realizar las operaciones de persistencia.
+
+La migración reemplazó la persistencia anterior basada en archivos JSON sin modificar las rutas públicas de la API.
+
+## Seguridad
+
+El proyecto utiliza variables de entorno para almacenar información sensible.
+
+Los siguientes archivos y carpetas no deben subirse al repositorio:
 
 ```text
-src/data/services.json
-src/data/bookings.json
-```
-
-Los datos permanecen almacenados aunque el servidor sea reiniciado.
-
-## Archivos ignorados
-
-El archivo `.gitignore` evita subir al repositorio:
-
-```text
-node_modules/
 .env
+node_modules/
 ```
-
-El archivo `.env.example` se incluye como referencia para configurar las variables de entorno necesarias.

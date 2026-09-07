@@ -3,23 +3,23 @@ import ServicesDAO from "../dao/services.dao.js";
 const servicesDAO = new ServicesDAO();
 
 export default class ServicesRepository {
-  getAll() {
+  async getAll() {
     return servicesDAO.getAll();
   }
 
-  getById(id) {
+  async getById(id) {
     return servicesDAO.getById(id);
   }
 
-  create(serviceData) {
+  async create(serviceData) {
     return servicesDAO.create(serviceData);
   }
 
-  update(id, updatedData) {
+  async update(id, updatedData) {
     return servicesDAO.update(id, updatedData);
   }
 
-  delete(id) {
+  async delete(id) {
     return servicesDAO.delete(id);
   }
 }

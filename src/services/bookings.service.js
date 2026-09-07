@@ -4,7 +4,7 @@ import ServicesRepository from "../repositories/services.repository.js";
 const bookingsRepository = new BookingsRepository();
 const servicesRepository = new ServicesRepository();
 
-export const createBooking = (bookingData) => {
+export const createBooking = async (bookingData) => {
   const requiredFields = [
     "clientName",
     "clientEmail",
@@ -15,7 +15,9 @@ export const createBooking = (bookingData) => {
 
   for (const field of requiredFields) {
     if (!(field in bookingData)) {
-      throw new Error(`Falta el campo requerido: ${field}`);
+      throw new Error(
+        `Falta el campo requerido: ${field}`
+      );
     }
   }
 
@@ -31,12 +33,16 @@ export const createBooking = (bookingData) => {
   return bookingsRepository.create(newBooking);
 };
 
-export const getBookingById = (id) => {
+export const getBookingById = async (id) => {
   return bookingsRepository.getById(id);
 };
 
-export const addServiceToBooking = (bookingId, serviceId) => {
-  const booking = bookingsRepository.getById(bookingId);
+export const addServiceToBooking = async (
+  bookingId,
+  serviceId
+) => {
+  const booking =
+    await bookingsRepository.getById(bookingId);
 
   if (!booking) {
     return {
@@ -45,7 +51,8 @@ export const addServiceToBooking = (bookingId, serviceId) => {
     };
   }
 
-  const service = servicesRepository.getById(serviceId);
+  const service =
+    await servicesRepository.getById(serviceId);
 
   if (!service) {
     return {
@@ -55,22 +62,27 @@ export const addServiceToBooking = (bookingId, serviceId) => {
   }
 
   const existingService = booking.services.find(
-    (item) => item.service === Number(serviceId)
+    (item) =>
+      item.service.toString() ===
+      service._id.toString()
   );
 
   if (existingService) {
     existingService.quantity += 1;
   } else {
     booking.services.push({
-      service: Number(serviceId),
+      service: service._id,
       quantity: 1,
     });
   }
 
-  const updatedBooking = bookingsRepository.update(
-    bookingId,
-    booking
-  );
+  const updatedBooking =
+    await bookingsRepository.update(
+      bookingId,
+      {
+        services: booking.services,
+      }
+    );
 
   return {
     data: updatedBooking,
