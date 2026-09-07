@@ -1,30 +1,30 @@
 # Backend I - Sistema de Turnos y Reservas
 
-Proyecto backend desarrollado con Node.js y Express para la gestión de servicios y reservas.
+API backend desarrollada con Node.js y Express para la gestión de servicios y reservas.
 
-En esta entrega se migró la persistencia de datos desde FileSystem a MongoDB Atlas utilizando Mongoose, manteniendo la arquitectura en capas y los endpoints existentes.
+El proyecto utiliza MongoDB Atlas con Mongoose, arquitectura en capas, vistas renderizadas con Handlebars y comunicación en tiempo real mediante Socket.io.
 
-## Tecnologías utilizadas
+## Tecnologías
 
 - Node.js
 - Express
 - MongoDB Atlas
 - Mongoose
+- Handlebars
+- Socket.io
 - dotenv
 - JavaScript ES Modules
 
 ## Arquitectura
 
-El proyecto utiliza una arquitectura en capas:
-
 ```text
-Router
+Routes
   ↓
-Controller
+Controllers
   ↓
-Service
+Services
   ↓
-Repository
+Repositories
   ↓
 DAO
   ↓
@@ -33,27 +33,7 @@ Mongoose
 MongoDB Atlas
 ```
 
-### Router
-
-Define los endpoints de la API y deriva las solicitudes hacia los controllers.
-
-### Controller
-
-Recibe las solicitudes HTTP, ejecuta la lógica correspondiente mediante la capa Service y devuelve las respuestas HTTP.
-
-### Service
-
-Contiene las validaciones y la lógica de negocio de la aplicación.
-
-### Repository
-
-Actúa como intermediario entre la lógica de negocio y la capa de acceso a datos.
-
-### DAO
-
-Gestiona el acceso a MongoDB utilizando los modelos de Mongoose.
-
-## Estructura del proyecto
+## Estructura
 
 ```text
 src/
@@ -62,7 +42,8 @@ src/
 │   └── env.config.js
 ├── controllers/
 │   ├── bookings.controller.js
-│   └── services.controller.js
+│   ├── services.controller.js
+│   └── views.controller.js
 ├── dao/
 │   ├── bookings.dao.js
 │   └── services.dao.js
@@ -75,164 +56,89 @@ src/
 │   └── services.repository.js
 ├── routes/
 │   ├── bookings.router.js
-│   └── services.router.js
+│   ├── services.router.js
+│   └── views.router.js
 ├── services/
 │   ├── bookings.service.js
 │   └── services.service.js
+├── views/
+│   ├── layouts/
+│   │   └── main.handlebars
+│   ├── services.handlebars
+│   └── availability.handlebars
+├── public/
+│   ├── css/
+│   │   └── styles.css
+│   └── js/
+│       └── socket.js
 ├── app.js
 └── server.js
 ```
 
-## Modelos de Mongoose
-
-### Service
-
-Los servicios contienen:
-
-- `name`
-- `description`
-- `duration`
-- `price`
-- `category`
-- `available`
-
-### Booking
-
-Las reservas contienen:
-
-- `clientName`
-- `clientEmail`
-- `date`
-- `time`
-- `status`
-- `services`
-
-Los servicios asociados a una reserva se almacenan mediante referencias `ObjectId`:
-
-```js
-services: [
-  {
-    service: ObjectId,
-    quantity: Number
-  }
-]
-```
-
-El campo `service` referencia al modelo `Service`.
-
-### Message
-
-Se incluye el modelo `Message` solicitado para la persistencia de mensajes en MongoDB.
-
-No se agregaron endpoints de mensajes porque no forman parte de los endpoints requeridos en esta entrega.
-
-## Endpoints
+## API REST
 
 ### Services
 
-#### Obtener todos los servicios
-
-```http
-GET /api/services
-```
-
-Permite filtros opcionales por `category` y `available`.
-
-#### Obtener un servicio por ID
-
-```http
-GET /api/services/:sid
-```
-
-#### Crear un servicio
-
-```http
-POST /api/services
-```
-
-#### Actualizar un servicio
-
-```http
-PUT /api/services/:sid
-```
-
-#### Eliminar un servicio
-
-```http
+```text
+GET    /api/services
+GET    /api/services/:sid
+POST   /api/services
+PUT    /api/services/:sid
 DELETE /api/services/:sid
 ```
 
 ### Bookings
 
-#### Crear una reserva
-
-```http
+```text
 POST /api/bookings
-```
-
-#### Obtener una reserva por ID
-
-```http
-GET /api/bookings/:bid
-```
-
-#### Agregar un servicio a una reserva
-
-```http
+GET  /api/bookings/:bid
 POST /api/bookings/:bid/services/:sid
 ```
 
-Si el servicio ya se encuentra asociado a la reserva, se incrementa su `quantity`.
+Las reservas almacenan los servicios mediante referencias `ObjectId` al modelo `Service`.
+
+## Vistas
+
+```text
+GET /views/services
+GET /views/availability
+```
+
+Las vistas utilizan datos reales almacenados en MongoDB y acceden a ellos mediante la arquitectura en capas existente.
+
+## Socket.io
+
+Al crear un servicio mediante:
+
+```text
+POST /api/services
+```
+
+el servidor emite el evento `serviceCreated`.
+
+`public/js/socket.js` escucha este evento y actualiza la vista de servicios automáticamente sin recargar la página.
 
 ## Variables de entorno
 
-Crear un archivo `.env` tomando como referencia `.env.example`:
+Crear `.env` a partir de `.env.example`:
 
 ```env
 PORT=8080
 NODE_ENV=development
-MONGO_URI=URI_DE_CONEXION_A_MONGODB_ATLAS
+MONGO_URI=URI_DE_MONGODB_ATLAS
 ```
 
-La variable `MONGO_URI` contiene la cadena de conexión a MongoDB Atlas.
-
-El archivo `.env` no se incluye en el repositorio para proteger las credenciales.
+`.env` y `node_modules/` están excluidos del repositorio.
 
 ## Instalación
 
-Instalar las dependencias:
-
 ```bash
 npm install
-```
-
-Iniciar el servidor:
-
-```bash
 npm start
 ```
 
-Con la configuración por defecto, la API estará disponible en:
+Servidor:
 
 ```text
 http://localhost:8080
-```
-
-## Persistencia
-
-La aplicación utiliza MongoDB Atlas como base de datos.
-
-Mongoose se utiliza para definir los modelos y realizar las operaciones de persistencia.
-
-La migración reemplazó la persistencia anterior basada en archivos JSON sin modificar las rutas públicas de la API.
-
-## Seguridad
-
-El proyecto utiliza variables de entorno para almacenar información sensible.
-
-Los siguientes archivos y carpetas no deben subirse al repositorio:
-
-```text
-.env
-node_modules/
 ```

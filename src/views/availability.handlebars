@@ -1,0 +1,45 @@
+<section>
+  <h2>Reservas y disponibilidad</h2>
+
+  <div class="bookings-container">
+    {{#if bookings.length}}
+      {{#each bookings}}
+        <article class="booking-card">
+          <h3>Reserva</h3>
+
+          <p>
+            <strong>Cliente:</strong>
+            {{clientName}}
+          </p>
+
+          <p>
+            <strong>Email:</strong>
+            {{clientEmail}}
+          </p>
+
+          <p>
+            <strong>Fecha:</strong>
+            {{date}}
+          </p>
+
+          <p>
+            <strong>Hora:</strong>
+            {{time}}
+          </p>
+
+          <p>
+            <strong>Estado:</strong>
+            {{status}}
+          </p>
+
+          <p>
+            <strong>Servicios asociados:</strong>
+            {{services.length}}
+          </p>
+        </article>
+      {{/each}}
+    {{else}}
+      <p>No hay reservas registradas.</p>
+    {{/if}}
+  </div>
+</section>

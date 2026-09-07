@@ -2,6 +2,10 @@ import mongoose from "mongoose";
 import BookingModel from "../models/booking.model.js";
 
 export default class BookingsDAO {
+  async getAll() {
+    return BookingModel.find().lean();
+  }
+
   async getById(id) {
     if (!mongoose.isValidObjectId(id)) {
       return null;

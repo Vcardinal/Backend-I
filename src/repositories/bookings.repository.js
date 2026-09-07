@@ -3,6 +3,10 @@ import BookingsDAO from "../dao/bookings.dao.js";
 const bookingsDAO = new BookingsDAO();
 
 export default class BookingsRepository {
+  async getAll() {
+    return bookingsDAO.getAll();
+  }
+
   async create(bookingData) {
     return bookingsDAO.create(bookingData);
   }

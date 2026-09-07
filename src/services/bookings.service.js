@@ -4,6 +4,10 @@ import ServicesRepository from "../repositories/services.repository.js";
 const bookingsRepository = new BookingsRepository();
 const servicesRepository = new ServicesRepository();
 
+export const getBookings = async () => {
+  return bookingsRepository.getAll();
+};
+
 export const createBooking = async (bookingData) => {
   const requiredFields = [
     "clientName",

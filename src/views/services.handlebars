@@ -1,0 +1,32 @@
+<section>
+  <h2>Servicios disponibles</h2>
+
+  <div id="services-container">
+    {{#if services.length}}
+      {{#each services}}
+        <article class="service-card">
+          <h3>{{name}}</h3>
+
+          <p><strong>Descripción:</strong> {{description}}</p>
+          <p><strong>Duración:</strong> {{duration}} minutos</p>
+          <p><strong>Precio:</strong> ${{price}}</p>
+          <p><strong>Categoría:</strong> {{category}}</p>
+
+          <p>
+            <strong>Disponibilidad:</strong>
+
+            {{#if available}}
+              Disponible
+            {{else}}
+              No disponible
+            {{/if}}
+          </p>
+        </article>
+      {{/each}}
+    {{else}}
+      <p class="empty-message">
+  No hay servicios registrados.
+</p>
+    {{/if}}
+  </div>
+</section>

@@ -51,6 +51,12 @@ export const createService = async (req, res) => {
       req.body
     );
 
+    const io = req.app.get("io");
+
+    if (io) {
+      io.emit("serviceCreated", newService);
+    }
+
     res.status(201).json(newService);
   } catch (error) {
     res.status(400).json({
